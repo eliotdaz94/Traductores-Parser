@@ -21,7 +21,7 @@ def lexer(archivo, colaTk, colaEr)
 				  "True" => "TkTrue", "False" => "TkFalse", "read" => "TkRead", "," => "TkComa", 
 				  "." => "TkPunto", ":" => "TkDosPuntos", "(" => "TkParAbre", ")" => "TkParCierra", 
 				  "[" => "TkCorcheteAbre", "]" => "TkCorcheteCierra", "{" => "TkLlaveAbre", 
-				  "}" => "TkLlaveCierra", '"->"' => "TkHacer", "<-" => "TkAsignacion", "+" => "TkSuma", 
+				  "}" => "TkLlaveCierra", "->" => "TkHacer", "<-" => "TkAsignacion", "+" => "TkSuma", 
 				  "-" => "TkResta", "*" => "TkMult", "/" => "TkDiv", "%" => "TkMod", "/\\" => "TkConjuncion", 
 				  "\\/" => "TkDisyuncion", "not" => "TkNegacion", "<" => "TkMenor", "<=" => "TkMenorIgual", 
 				  ">" => "TkMayor", ">=" => "TkMayorIgual", "=>" => "TkIgual", "++" => "TkSiguienteCar", 
