@@ -1,0 +1,5 @@
+begin 
+	for i from 5 to -56 ->
+		mama <- 'h'.
+	end
+end
