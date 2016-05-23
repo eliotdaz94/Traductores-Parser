@@ -44,7 +44,14 @@ rule
         : INSTRUCCION INSTRUCCION
         ;
     CONDICIONAL
-        : 'if' {@handler.guardia_bool} EXPR_BOOL '->' {@handler.exito} INSTRUCCION 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
+        : 'if' {@handler.guardia_bool} EXPR_BOOL '->' {@handler.exito} INSTRUCCION F
+        | 'if' EXPR_RELACION '->' {@handler.exito} INSTRUCCION F
+        | 'if' {@handler.guardia_bool} EXPR_RELACION_BOOL '->' {@handler.exito} INSTRUCCION F
+        | 'if' {@handler.guardia_bool} EXPR_RELACION_MATRIX '->' {@handler.exito} INSTRUCCION F
+        ;
+    F
+        : 'end'
+        | 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
         ;
     REPETICION_DET
         : 'for' {@handler.cicloDet} ID 'from' {@handler.desde} EXPR_ARIT 'to' {@handler.hasta} EXPR_ARIT H
@@ -126,6 +133,7 @@ rule
         | ID {@handler.incremento} '++'
         | ID {@handler.decremento} '--'
         | '#' {@handler.ascii} ID
+        | ID
         ;
     EXPR_MATRIX
         : EXPR_MATRIX '::' {@handler.concat} EXPR_MATRIX
@@ -151,11 +159,11 @@ rule
         | EXPR_CARACTER
         ;
     EXPR_RELACION_BOOL
-        : EXPR_RELACION {@handler.igual}  '=' EXPR_RELACION
+        : EXPR_RELACION {@handler.igual} '=' EXPR_RELACION
         | EXPR_RELACION {@handler.desigual} '/=' EXPR_RELACION
         ;
     EXPR_RELACION_MATRIX
-        : EXPR_MATRIX {@handler.igual}  '=' EXPR_MATRIX
+        : EXPR_MATRIX {@handler.igual} '=' EXPR_MATRIX
         | EXPR_RELACION_MATRIX {@handler.desigual} '/=' EXPR_RELACION_MATRIX
         ;
     ID_AS
