@@ -28,7 +28,7 @@ def lexer(archivo, colaTk, colaEr)
 				  "--" => "TkAnteriorCar", "#" => "TkValorAscii", "::" => "TkConcatenacion", 
 				  "$" => "TkRotacion", "?" => "TkTrasposicion", "'\\n'" => "TkCaracter", "'\\t'" => "TkCaracter",
 			  	  "'\''" => "TkCaracter", "'\\\\'" => "TkCaracter" , "otherwise" => "TkOtherwise", 
-			  	  "step" => "TkStep", "/=" => "TkDesigual", "var" => "TkVar"}
+			  	  "step" => "TkStep", "/=" => "TkDesigual", "var" => "TkVar", "print" => "TkPrint"}
 
 	programa = ""
 	File.open(archivo, "r") do |f|

@@ -13,8 +13,8 @@ rule
         | 'var' {@handler.start_lista_declaracion} LISTA_IDENT ':' TIPO
         ;
     LISTA_IDENT
-        : LISTA_IDENT {@handler.start_lista_ident} ',' ID
-        | ID
+        : LISTA_IDENT {@handler.start_lista_ident} ',' VARIABLE
+        | VARIABLE
         | ASIGNACION {@handler.asignacion}
         ;
     TIPO
@@ -24,69 +24,62 @@ rule
         | 'matrix' '[' DIMENSION ']' 'of' TIPO
         ;
     DIMENSION
-        : DIMENSION ',' num {@handler.numero(val[0])}
-        | num {@handler.numero(val[0])}
+        : DIMENSION ',' EXPRESION
+        | EXPRESION
         ;
     INSTRUCCION
-        : {@handler.asignacion} ASIGNACION '.'
+        : ASIGNACION '.' {@handler.empilar("ASIGNACION")}
         | {@handler.io} I_O '.'
-        | {@handler.condicional} CONDICIONAL
+        | CONDICIONAL {@handler.empilar("CONDICIONAL")}
         | REPETICION_DET
         | REPETICION_INDET
         | INICIAL
         | SECUENCIACION
         ;
     ASIGNACION
-        : ID_AS '<-' EXPRESION
-        | EXPR_MATRIX INDEX '<-' EXPRESION
+        : VARIABLE {@handler.empilar("VARIABLE")} '<-' EXPRESION
+        | EXPRESION INDEX '<-' EXPRESION
         ;
     SECUENCIACION
         : INSTRUCCION INSTRUCCION
         ;
     CONDICIONAL
-        : 'if' {@handler.guardia_bool} EXPR_BOOL '->' {@handler.exito} INSTRUCCION 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_RELACION '->' {@handler.exito} INSTRUCCION 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_RELACION_BOOL '->' {@handler.exito} INSTRUCCION 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_RELACION_MATRIX '->' {@handler.exito} INSTRUCCION 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_BOOL '->' {@handler.exito} INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_RELACION '->' {@handler.exito} INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_RELACION_BOOL '->' {@handler.exito} INSTRUCCION 'end' {@handler.end}
-        | 'if' {@handler.guardia_bool} EXPR_RELACION_MATRIX '->' {@handler.exito} INSTRUCCION 'end' {@handler.end}
+        : 'if' EXPRESION '->' INSTRUCCION CONDICIONAL_CONT
+        ;
+    CONDICIONAL_CONT
+        : 'end'
+        | 'otherwise' '->' INSTRUCCION {@handler.empilar("OTHERWISE")} 'end' {@handler.end}
         ;
     REPETICION_DET
-        : 'for' {@handler.cicloDet} ID 'from' {@handler.desde} EXPR_ARIT 'to' {@handler.hasta} EXPR_ARIT H
-        | 'for' {@handler.cicloDet} ID 'from' {@handler.desde} EXPR_ARIT 'to' {@handler.hasta} EXPR_ARIT H
+        : 'for' {@handler.cicloDet} VARIABLE 'from' {@handler.desde} EXPRESION 'to' {@handler.hasta} EXPRESION REPETICION_DET_CONT
         ;
-    H   #SIN ESTA COSA RARA QUE HICE ACA SOLO ENTRABA EN EL PRIMER CASO DE REPETICION_DET, LO PUSE PARA PROBAR PERO ASI SE ARREGLA
+    REPETICION_DET_CONT
         :  '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
-        | 'step' {@handler.paso} EXPR_ARIT '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
+        | 'step' {@handler.paso} EXPRESION '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
         ;
     REPETICION_INDET
-        : 'while' {@handler.cicloIndet} EXPR_BOOL {@handler.guardia_bool} '->' {@handler.repetir} INSTRUCCION
+        : 'while' {@handler.cicloIndet} EXPRESION {@handler.guardia_bool} '->' {@handler.repetir} INSTRUCCION
         ;
     I_O
-        : 'read' {@handler.lectura} ID
+        : 'read' {@handler.lectura} VARIABLE
         | 'print' {@handler.impresion} EXPRESION
         ;
     EXPRESION
         : LITERAL 
-        | VARIABLE
-        | EXPR_ARIT
-        | EXPR_BOOL
-        | EXPR_CARACTER
+        | VARIABLE {@handler.empilar("VARIABLE")}
+        | EXPR_ARIT 
+        | EXPR_BOOL 
         | EXPR_MATRIX
         | EXPR_RELACION
-        | EXPR_RELACION_BOOL
-        | EXPR_RELACION_MATRIX
         ;
     LITERAL
-        : LIT_INT
+        : LIT_INT {@handler.empilar("LITERAL ENTERO")}
         | LIT_BOOL
-        | LIT_CARACTER
+        | caracter {@handler.caracter(val[0])}
         | LIT_MATRIX
         ;
     LIT_INT
-        : num {@handler.numero(val[0])}
+        : num {@handler.empilar(val[0])}
         | '-' NEG #Sigue sin agarrar negativos
         ;
     NEG
@@ -96,80 +89,52 @@ rule
         : 'True' {@handler.booleano("True")}
         | 'False' {@handler.booleano("False")}
         ;
-    LIT_CARACTER
-        : caracter {@handler.caracter(val[0])}
-        ;
     LIT_MATRIX #ACA no se me ocurre que hacer
         : '{' LIT_MATRIX '}' 
         | LIT_MATRIX ',' LIT_MATRIX
         | num {@handler.numero(val[0])}
         ;
     VARIABLE
-        : ID
+        : ident {@handler.empilar(val[0])}
         ;
     EXPR_ARIT #EN TODAS LAS OPERACIONES SALE OPERADOR: OPERACION OPERADOR: ASI DIFERENCIAS ENTRE EL IZQ Y EL DER
-        : '(' EXPR_ARIT ')'
-        | EXPR_ARIT '+' {@handler.suma} EXPR_ARIT
-        | EXPR_ARIT '-' {@handler.resta} EXPR_ARIT
-        | EXPR_ARIT '*' {@handler.mult} EXPR_ARIT
-        | EXPR_ARIT '/' {@handler.div} EXPR_ARIT
-        | EXPR_ARIT '%' {@handler.mod} EXPR_ARIT
-        | '-' EXPR_ARIT 
-        | {@handler.operadorV} ID
-        | {@handler.operadorI} LIT_INT
+        : '(' EXPRESION ')'
+        | EXPRESION '+' {@handler.empilar("\'Suma\'")} EXPRESION {@handler.empilar("BIN_ARIT")}
+        | EXPRESION '-' {@handler.resta} EXPRESION
+        | EXPRESION '*' {@handler.mult} EXPRESION
+        | EXPRESION '/' {@handler.div} EXPRESION
+        | EXPRESION '%' {@handler.mod} EXPRESION
+        | '-' EXPRESION 
         ;
     EXPR_BOOL
-        : '(' EXPR_BOOL ')'
-        | EXPR_BOOL '/\\' {@handler.and} EXPR_BOOL
-        | EXPR_BOOL '\\/' {@handler.or} EXPR_BOOL
-        | {@handler.negacion} 'not' EXPR_BOOL
-        | {@handler.operadorV} ID
-        | {@handler.operadorB} LIT_BOOL
+        : '(' EXPRESION ')'
+        | EXPRESION '/\\' {@handler.and} EXPRESION
+        | EXPRESION '\\/' {@handler.or} EXPRESION
+        | {@handler.negacion} 'not' EXPRESION
         ;
     EXPR_CARACTER
-        : LIT_CARACTER {@handler.incremento} '++'
-        | LIT_CARACTER {@handler.decremento} '--'
-        | '#' {@handler.ascii} LIT_CARACTER
-        | ID {@handler.incremento} '++'
-        | ID {@handler.decremento} '--'
-        | '#' {@handler.ascii} ID
+        : EXPRESION {@handler.caracter(val[0])} {@handler.incremento} '++'
+        | EXPRESION {@handler.caracter(val[0])} {@handler.decremento} '--'
+        | '#' {@handler.ascii} EXPRESION {@handler.caracter(val[0])}
         ;
     EXPR_MATRIX
-        : EXPR_MATRIX '::' {@handler.concat} EXPR_MATRIX
-        | {@handler.rotacion} '$' EXPR_MATRIX
-        | EXPR_MATRIX {@handler.trasp} '?'
-        | EXPR_MATRIX INDEX
-        | {@handler.operadorV} ID
-        | {@handler.operadorM} LIT_MATRIX
+        : EXPRESION '::' {@handler.concat} EXPRESION
+        | {@handler.rotacion} '$' EXPRESION
+        | EXPRESION {@handler.trasp} '?'
+        | EXPRESION INDEX
         ;
     INDEX  #NO SE SI HAY QUE COLOCAR ALGO
         : INDEX INDEX
-        | '[' num ']'
-        | '[' ID ']'
+        | '[' EXPRESION ']'
+        | '[' DIMENSION ']'
         ;
     EXPR_RELACION
-        : EXPR_RELACION '<' {@handler.menor} EXPR_RELACION
-        | EXPR_RELACION '<=' {@handler.menorIgual} EXPR_RELACION
-        | EXPR_RELACION '>' {@handler.mayor} EXPR_RELACION
-        | EXPR_RELACION '>=' {@handler.mayorIgual} EXPR_RELACION
-        | EXPR_RELACION '=' {@handler.igual} EXPR_RELACION
-        | EXPR_RELACION '/=' {@handler.desigual} EXPR_RELACION
-        | EXPR_ARIT
-        | EXPR_CARACTER
-        ;
-    EXPR_RELACION_BOOL
-        : EXPR_RELACION {@handler.igual} '=' EXPR_RELACION
-        | EXPR_RELACION {@handler.desigual} '/=' EXPR_RELACION
-        ;
-    EXPR_RELACION_MATRIX
-        : EXPR_MATRIX {@handler.igual} '=' EXPR_MATRIX
-        | EXPR_RELACION_MATRIX {@handler.desigual} '/=' EXPR_RELACION_MATRIX
-        ;
-    ID_AS
-        :ident {@handler.ident_as(val[0])}
-        ;
-    ID
-        :ident {@handler.ident(val[0])}
+        : EXPRESION '<' {@handler.menor} EXPRESION
+        | EXPRESION '<=' {@handler.menorIgual} EXPRESION
+        | EXPRESION '>' {@handler.mayor} EXPRESION
+        | EXPRESION '>=' {@handler.mayorIgual} EXPRESION
+        | EXPRESION '=' {@handler.igual} EXPRESION
+        | EXPRESION '/=' {@handler.desigual} EXPRESION
         ;
 end
  
@@ -177,7 +142,7 @@ end
   attr_reader :handler
   require './handler'
   
-  def initialize tokenizer, handler = Handler.new
+  def initialize (tokenizer, handler)
     @tokenizer = tokenizer
     @handler = handler
     super()
