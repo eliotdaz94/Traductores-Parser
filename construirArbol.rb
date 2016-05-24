@@ -1,19 +1,13 @@
 class Instruccion
-	def initialize
-    	@elemt1 = nil
-    	@elemt2 = nil
+	def initialize(elemt1, elemt2)
+    	@elemt1 = elemt1
+    	@elemt2 = elemt2
   	end
   	def get_elemt1
     	return @elemt1
   	end
   	def get_elemt2
     	return @elemt2
-  	end
-  	def set_elemt1(e)
-    	@elemt1 = e
-  	end
-  	def set_elemt2(e)
-    	@elemt2 = e
   	end
 end 
 
@@ -61,14 +55,11 @@ class Asignacion < Instruccion
 end
 
 class Variable
-	def initialize
-    	@ident = nil
+	def initialize(ident)
+    	@ident = ident
   	end
   	def get_ident
     	return @ident
-  	end
-  	def set_ident(e)
-    	@ident = e
   	end
   	def toString(tab)
   		s = "VARIABLE"
@@ -81,14 +72,11 @@ class Variable
 end
 
 class LiteralEntero
-	def initialize
-    	@num = nil
+	def initialize(num)
+    	@num = num
   	end
   	def get_num
     	return @num
-  	end
-  	def set_num(e)
-    	@num = e
   	end
   	def toString(tab)
   		s = "LITERAL ENTERO"
@@ -101,7 +89,7 @@ class LiteralEntero
 end
 
 class ExpresionBinaria
-	def initialize (tipo)
+	def initialize (izq, der, op, tipo)
     	@opIzq = nil
     	@opDer = nil
     	@operador = nil

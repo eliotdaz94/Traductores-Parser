@@ -37,9 +37,10 @@ end
 /
 tknz = Tokenizer.new(tks)
 handler = Handler.new()
-prs = Parser.new(tknz, handler)
+prs = Parser.new(tknz)
 algo = prs.parse
-pila = handler.get_stack()
-puts(pila)
-salida = construirArbol(pila)
-puts(salida.toString(1))
+puts(algo.toString(1))
+#pila = handler.get_stack()
+#puts(pila)
+#salida = construirArbol(pila)
+#puts(salida.toString(1))

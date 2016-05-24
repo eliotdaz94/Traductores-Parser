@@ -1,7 +1,3 @@
 begin
-	if bar ->
-		contador <- 35.
-	otherwise ->
-		blas <- 43.
-	end
+	hola <- 4.
 end

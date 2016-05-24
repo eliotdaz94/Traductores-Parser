@@ -3,19 +3,39 @@ class Parser
 # hacen despues del lexer.
 token ident num caracter
 
+    prechigh
+        right UMINUS
+        left '*' '/' '%'
+        left '+' '-'
+
+        right 'not'
+        left '/\\' 
+        left '\\/'
+
+        left '++' '--'
+        right '#'
+
+        left '['
+        left ']'
+        left '::'
+        right '$'
+        left '?'
+        nonassoc '<' '<=' '>' '>=' '=' '/='
+    preclow
+
 rule
     INICIAL
-        : 'with' {@handler.start_inicio} LISTA_DECLARACION 'begin' {@handler.start_begin} INSTRUCCION 'end' {@handler.end}
-        | 'begin' {@handler.start_begin} INSTRUCCION 'end' {@handler.end}
+        : 'with' LISTA_DECLARACION 'begin' INSTRUCCION_GENERAL 'end'
+        | 'begin' INSTRUCCION_GENERAL 'end' {return val[1]}
         ;
     LISTA_DECLARACION
-        : LISTA_DECLARACION {@handler.start_lista_declaracion} 'var' LISTA_IDENT ':' TIPO
-        | 'var' {@handler.start_lista_declaracion} LISTA_IDENT ':' TIPO
+        : LISTA_DECLARACION 'var' LISTA_IDENT ':' TIPO
+        | 'var' LISTA_IDENT ':' TIPO
         ;
     LISTA_IDENT
-        : LISTA_IDENT {@handler.start_lista_ident} ',' VARIABLE
+        : LISTA_IDENT ',' VARIABLE
         | VARIABLE
-        | ASIGNACION {@handler.asignacion}
+        | ASIGNACION
         ;
     TIPO
         : 'int'
@@ -27,124 +47,102 @@ rule
         : DIMENSION ',' EXPRESION
         | EXPRESION
         ;
+    INSTRUCCION_GENERAL
+        : SECUENCIACION
+        | INSTRUCCION
+    SECUENCIACION
+        : INSTRUCCION_GENERAL INSTRUCCION
+        ;
     INSTRUCCION
-        : ASIGNACION '.' {@handler.empilar("ASIGNACION")}
-        | {@handler.io} I_O '.'
-        | CONDICIONAL {@handler.empilar("CONDICIONAL")}
+        : ASIGNACION '.' {result = val[0]}
+        | I_O '.'
+        | CONDICIONAL
         | REPETICION_DET
         | REPETICION_INDET
         | INICIAL
-        | SECUENCIACION
         ;
     ASIGNACION
-        : VARIABLE {@handler.empilar("VARIABLE")} '<-' EXPRESION
-        | EXPRESION INDEX '<-' EXPRESION
-        ;
-    SECUENCIACION
-        : INSTRUCCION INSTRUCCION
+        : EXPRESION '<-' EXPRESION {result = Asignacion.new(val[0],val[2])}
         ;
     CONDICIONAL
-        : 'if' EXPRESION '->' INSTRUCCION CONDICIONAL_CONT
+        : 'if' EXPRESION '->' INSTRUCCION_GENERAL CONDICIONAL_CONT
         ;
     CONDICIONAL_CONT
         : 'end'
-        | 'otherwise' '->' INSTRUCCION {@handler.empilar("OTHERWISE")} 'end' {@handler.end}
+        | 'otherwise' '->' INSTRUCCION_GENERAL 'end'
         ;
     REPETICION_DET
-        : 'for' {@handler.cicloDet} VARIABLE 'from' {@handler.desde} EXPRESION 'to' {@handler.hasta} EXPRESION REPETICION_DET_CONT
+        : 'for' VARIABLE 'from' EXPRESION 'to' EXPRESION REPETICION_DET_CONT
         ;
     REPETICION_DET_CONT
-        :  '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
-        | 'step' {@handler.paso} EXPRESION '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
+        :  '->' INSTRUCCION_GENERAL 'end'
+        | 'step' EXPRESION '->' INSTRUCCION_GENERAL 'end'
         ;
     REPETICION_INDET
-        : 'while' {@handler.cicloIndet} EXPRESION {@handler.guardia_bool} '->' {@handler.repetir} INSTRUCCION
+        : 'while' EXPRESION '->' INSTRUCCION_GENERAL 'end'
         ;
     I_O
-        : 'read' {@handler.lectura} VARIABLE
-        | 'print' {@handler.impresion} EXPRESION
+        : 'read' VARIABLE
+        | 'print' EXPRESION
         ;
     EXPRESION
         : LITERAL 
-        | VARIABLE {@handler.empilar("VARIABLE")}
-        | EXPR_ARIT 
-        | EXPR_BOOL 
-        | EXPR_MATRIX
-        | EXPR_RELACION
+        | VARIABLE
+        | '(' EXPRESION ')'
+        | EXPRESION '+' EXPRESION
+        | EXPRESION '-' EXPRESION
+        | EXPRESION '*' EXPRESION
+        | EXPRESION '/' EXPRESION
+        | EXPRESION '%' EXPRESION
+        | '-' EXPRESION =UMINUS
+        | EXPRESION '/\\' EXPRESION
+        | EXPRESION '\\/' EXPRESION
+        | 'not' EXPRESION
+        | EXPRESION '++'
+        | EXPRESION '--'
+        | '#' EXPRESION
+        | EXPRESION '::' EXPRESION
+        | '$' EXPRESION
+        | EXPRESION '?'
+        | EXPRESION INDEX
+        | EXPRESION '<' EXPRESION
+        | EXPRESION '<=' EXPRESION
+        | EXPRESION '>' EXPRESION
+        | EXPRESION '>=' EXPRESION
+        | EXPRESION '=' EXPRESION
+        | EXPRESION '/=' EXPRESION
         ;
     LITERAL
-        : LIT_INT {@handler.empilar("LITERAL ENTERO")}
+        : LIT_INT
         | LIT_BOOL
-        | caracter {@handler.caracter(val[0])}
+        | caracter
         | LIT_MATRIX
         ;
     LIT_INT
-        : num {@handler.empilar(val[0])}
-        | '-' NEG #Sigue sin agarrar negativos
-        ;
-    NEG
-        : num {@handler.numeroNeg(val[0])}
+        : num {result = LiteralEntero.new(val[0])}
         ;
     LIT_BOOL
-        : 'True' {@handler.booleano("True")}
-        | 'False' {@handler.booleano("False")}
+        : 'True'
+        | 'False'
         ;
     LIT_MATRIX #ACA no se me ocurre que hacer
-        : '{' LIT_MATRIX '}' 
-        | LIT_MATRIX ',' LIT_MATRIX
-        | num {@handler.numero(val[0])}
+        : '{' DIMENSION '}' 
         ;
     VARIABLE
-        : ident {@handler.empilar(val[0])}
-        ;
-    EXPR_ARIT #EN TODAS LAS OPERACIONES SALE OPERADOR: OPERACION OPERADOR: ASI DIFERENCIAS ENTRE EL IZQ Y EL DER
-        : '(' EXPRESION ')'
-        | EXPRESION '+' {@handler.empilar("\'Suma\'")} EXPRESION {@handler.empilar("BIN_ARIT")}
-        | EXPRESION '-' {@handler.resta} EXPRESION
-        | EXPRESION '*' {@handler.mult} EXPRESION
-        | EXPRESION '/' {@handler.div} EXPRESION
-        | EXPRESION '%' {@handler.mod} EXPRESION
-        | '-' EXPRESION 
-        ;
-    EXPR_BOOL
-        : '(' EXPRESION ')'
-        | EXPRESION '/\\' {@handler.and} EXPRESION
-        | EXPRESION '\\/' {@handler.or} EXPRESION
-        | {@handler.negacion} 'not' EXPRESION
-        ;
-    EXPR_CARACTER
-        : EXPRESION {@handler.caracter(val[0])} {@handler.incremento} '++'
-        | EXPRESION {@handler.caracter(val[0])} {@handler.decremento} '--'
-        | '#' {@handler.ascii} EXPRESION {@handler.caracter(val[0])}
-        ;
-    EXPR_MATRIX
-        : EXPRESION '::' {@handler.concat} EXPRESION
-        | {@handler.rotacion} '$' EXPRESION
-        | EXPRESION {@handler.trasp} '?'
-        | EXPRESION INDEX
+        : ident {result = Variable.new(val[0])}
         ;
     INDEX  #NO SE SI HAY QUE COLOCAR ALGO
-        : INDEX INDEX
-        | '[' EXPRESION ']'
-        | '[' DIMENSION ']'
-        ;
-    EXPR_RELACION
-        : EXPRESION '<' {@handler.menor} EXPRESION
-        | EXPRESION '<=' {@handler.menorIgual} EXPRESION
-        | EXPRESION '>' {@handler.mayor} EXPRESION
-        | EXPRESION '>=' {@handler.mayorIgual} EXPRESION
-        | EXPRESION '=' {@handler.igual} EXPRESION
-        | EXPRESION '/=' {@handler.desigual} EXPRESION
+        : '[' DIMENSION ']'
         ;
 end
  
 ---- inner
   attr_reader :handler
   require './handler'
+  require './construirArbol.rb'
   
-  def initialize (tokenizer, handler)
+  def initialize (tokenizer)
     @tokenizer = tokenizer
-    @handler = handler
     super()
   end
 
@@ -154,5 +152,4 @@ end
 
   def parse
     do_parse
-    handler
   end

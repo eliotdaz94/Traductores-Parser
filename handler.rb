@@ -2,6 +2,7 @@ class Handler
 
   def initialize
     @stack = Array.new()
+    @final = nil
   end
 
   def empilar(elemt)
@@ -10,6 +11,10 @@ class Handler
 
   def get_stack()
     return @stack
+  end
+
+  def retornar(h)
+    return h
   end
 
   def start_inicio
