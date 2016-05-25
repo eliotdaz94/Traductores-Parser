@@ -55,7 +55,7 @@ rule
         ;
     INSTRUCCION
         : ASIGNACION '.' {result = val[0]}
-        | I_O '.'
+        | I_O '.' 
         | CONDICIONAL
         | REPETICION_DET
         | REPETICION_INDET
@@ -65,21 +65,22 @@ rule
         : EXPRESION '<-' EXPRESION {result = Asignacion.new(val[0],val[2])}
         ;
     CONDICIONAL
-        : 'if' EXPRESION '->' INSTRUCCION_GENERAL CONDICIONAL_CONT
+        : 'if' EXPRESION '->' INSTRUCCION_GENERAL CONDICIONAL_CONT {result = Condicional.new(val[1], val[3], val[4])}
         ;
     CONDICIONAL_CONT
-        : 'end'
-        | 'otherwise' '->' INSTRUCCION_GENERAL 'end'
+        : 'end' {result = nil}
+        | 'otherwise' '->' INSTRUCCION_GENERAL 'end' {result = val[2]}
         ;
     REPETICION_DET
-        : 'for' VARIABLE 'from' EXPRESION 'to' EXPRESION REPETICION_DET_CONT
+        : 'for' VARIABLE 'from' EXPRESION 'to' EXPRESION REPETICION_DET_CONT 
+          {result = RepeticionDet.new(val[1], val[3], val[5], val[6][0], val[6][1])}
         ;
     REPETICION_DET_CONT
-        :  '->' INSTRUCCION_GENERAL 'end'
-        | 'step' EXPRESION '->' INSTRUCCION_GENERAL 'end'
+        :  '->' INSTRUCCION_GENERAL 'end' {result = [nil, val[1]]}
+        | 'step' EXPRESION '->' INSTRUCCION_GENERAL 'end' {result = [val[1], val[3]]}
         ;
     REPETICION_INDET
-        : 'while' EXPRESION '->' INSTRUCCION_GENERAL 'end'
+        : 'while' EXPRESION '->' INSTRUCCION_GENERAL 'end' {result = RepeticionIndet.new(val[1], val[3])}
         ;
     I_O
         : 'read' VARIABLE
@@ -125,13 +126,13 @@ rule
         : 'True'
         | 'False'
         ;
-    LIT_MATRIX #ACA no se me ocurre que hacer
+    LIT_MATRIX
         : '{' DIMENSION '}' 
         ;
     VARIABLE
         : ident {result = Variable.new(val[0])}
         ;
-    INDEX  #NO SE SI HAY QUE COLOCAR ALGO
+    INDEX
         : '[' DIMENSION ']'
         ;
 end

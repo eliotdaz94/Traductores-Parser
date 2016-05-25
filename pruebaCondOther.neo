@@ -1,0 +1,7 @@
+begin
+	if bar ->
+		contador <- 35.
+	otherwise ->
+		compilador <- 53.
+	end
+end

@@ -12,15 +12,12 @@ class Instruccion
 end 
 
 class Condicional < Instruccion
-	def initialize
-		super()
-    	@elemt3 = nil
+	def initialize(elemt1, elemt2, elemt3)
+		super(elemt1, elemt2)
+    	@elemt3 = elemt3
   	end
   	def get_elemt3
     	return @elemt3
-  	end
-  	def set_elemt3(e)
-    	@elemt3 = e
   	end
   	def toString(tab)
 		s = "CONDICIONAL"
@@ -53,6 +50,60 @@ class Asignacion < Instruccion
 		return s
 	end
 end
+
+class RepeticionIndet < Instruccion
+	def toString(tab)
+		s = "REPETICION INDETERMINADA"
+		s = s + "\n"
+		s = s + ("\t" * tab)
+		aux = get_elemt1()
+		s = s + "- guardia: " + aux.toString(tab + 1)
+		aux = get_elemt2()
+		s = s + ("\t" * tab)
+		s = s + "- exito: " + aux.toString(tab + 1)
+		return s
+	end
+end
+
+class RepeticionDet < Instruccion
+	def initialize(elemt1, elemt2, elemt3, elemt4, elemt5)
+		super(elemt1, elemt2)
+    	@elemt3 = elemt3
+    	@elemt4 = elemt4
+    	@elemt5 = elemt5
+  	end
+  	def get_elemt3
+    	return @elemt3
+  	end
+  	def get_elemt4
+    	return @elemt4
+  	end
+  	def get_elemt5
+    	return @elemt5
+  	end
+  	def toString(tab)
+		s = "REPETICION DETERMINADA"
+		s = s + "\n"
+		s = s + ("\t" * tab)
+		aux = get_elemt1()
+		s = s + "- iterador: " + aux.toString(tab + 1)
+		aux = get_elemt2()
+		s = s + ("\t" * tab)
+		s = s + "- limite inferior: " + aux.toString(tab + 1)
+		aux = get_elemt3()
+		s = s + ("\t" * tab)
+		s = s + "- limite superior: " + aux.toString(tab + 1)
+		if (get_elemt4() != nil)
+			aux = get_elemt4()
+			s = s + ("\t" * tab)
+			s = s + "- paso: " + aux.toString(tab + 1)
+		end
+		aux = get_elemt5()
+		s = s + ("\t" * tab)
+		s = s + "- cuerpo: " + aux.toString(tab + 1)
+		return s
+	end
+end 
 
 class Variable
 	def initialize(ident)
@@ -159,3 +210,5 @@ def construirArbol(pila)
 		return v 
 	end
 end
+
+c = Condicional.new("hola", "chao", "hasta luego")

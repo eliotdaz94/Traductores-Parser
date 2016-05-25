@@ -1,0 +1,9 @@
+begin
+	if bar ->
+		contador <- 35.
+	otherwise ->
+		while 23 ->
+			tmp <- f2.
+		end
+	end
+end

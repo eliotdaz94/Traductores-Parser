@@ -1,0 +1,5 @@
+begin
+	for i from j to k step l->
+		f2 <- f1.
+	end
+end
