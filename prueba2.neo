@@ -1,0 +1,5 @@
+begin
+	if bar ->
+		contador <- 35.
+	end
+end
