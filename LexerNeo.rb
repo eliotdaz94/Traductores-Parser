@@ -4,6 +4,9 @@ require './lexer'
 require './parser'
 require './Tokenizer'
 require 'thread'
+#attr_reader :handler
+require './handler'
+require './construirArbol'
 
 # Funcion principal encargada de recibir el nombre del archivo mediante argumento
 # para luego llamar al lexer e imprimir los respectivos tokens o mensajes de error.
@@ -11,12 +14,6 @@ require 'thread'
 tks = Queue.new
 errs = Queue.new
 lexer(ARGV[0],tks,errs)
-
-tknz = Tokenizer.new(tks)
-prs = Parser.new(tknz)
-handler = prs.parse
-#print(handler.get_stack())
-
 /
 if(errs.size == 0)
 	for i in 0..Integer(tks.size)-1
@@ -38,4 +35,12 @@ else
 	end
 end
 /
-
+tknz = Tokenizer.new(tks)
+handler = Handler.new()
+prs = Parser.new(tknz)
+algo = prs.parse
+puts(algo.toString(1))
+#pila = handler.get_stack()
+#puts(pila)
+#salida = construirArbol(pila)
+#puts(salida.toString(1))

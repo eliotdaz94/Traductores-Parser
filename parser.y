@@ -3,19 +3,39 @@ class Parser
 # hacen despues del lexer.
 token ident num caracter
 
+    prechigh
+        right UMINUS
+        left '*' '/' '%'
+        left '+' '-'
+
+        right 'not'
+        left '/\\' 
+        left '\\/'
+
+        left '++' '--'
+        right '#'
+
+        left '['
+        left ']'
+        left '::'
+        right '$'
+        left '?'
+        nonassoc '<' '<=' '>' '>=' '=' '/='
+    preclow
+
 rule
     INICIAL
-        : 'with' {@handler.start_inicio} LISTA_DECLARACION 'begin' {@handler.start_begin} INSTRUCCION 'end' {@handler.end}
-        | 'begin' {@handler.start_begin} INSTRUCCION 'end' {@handler.end}
+        : 'with' LISTA_DECLARACION 'begin' INSTRUCCION_GENERAL 'end'
+        | 'begin' INSTRUCCION_GENERAL 'end' {return val[1]}
         ;
     LISTA_DECLARACION
-        : LISTA_DECLARACION {@handler.start_lista_declaracion} 'var' LISTA_IDENT ':' TIPO
-        | 'var' {@handler.start_lista_declaracion} LISTA_IDENT ':' TIPO
+        : LISTA_DECLARACION 'var' LISTA_IDENT ':' TIPO
+        | 'var' LISTA_IDENT ':' TIPO
         ;
     LISTA_IDENT
-        : LISTA_IDENT {@handler.start_lista_ident} ',' ID
-        | ID
-        | ASIGNACION {@handler.asignacion}
+        : LISTA_IDENT ',' VARIABLE
+        | VARIABLE
+        | ASIGNACION
         ;
     TIPO
         : 'int'
@@ -24,163 +44,105 @@ rule
         | 'matrix' '[' DIMENSION ']' 'of' TIPO
         ;
     DIMENSION
-        : DIMENSION ',' num {@handler.numero(val[0])}
-        | num {@handler.numero(val[0])}
+        : DIMENSION ',' EXPRESION
+        | EXPRESION
+        ;
+    INSTRUCCION_GENERAL
+        : SECUENCIACION
+        | INSTRUCCION
+    SECUENCIACION
+        : INSTRUCCION_GENERAL INSTRUCCION
         ;
     INSTRUCCION
-        : {@handler.asignacion} ASIGNACION '.'
-        | {@handler.io} I_O '.'
-        | {@handler.condicional} CONDICIONAL
+        : ASIGNACION '.' {result = val[0]}
+        | I_O '.'
+        | CONDICIONAL
         | REPETICION_DET
         | REPETICION_INDET
         | INICIAL
-        | SECUENCIACION
         ;
     ASIGNACION
-        : ID_AS '<-' EXPRESION
-        | EXPR_MATRIX INDEX '<-' EXPRESION
-        ;
-    SECUENCIACION
-        : INSTRUCCION INSTRUCCION
+        : EXPRESION '<-' EXPRESION {result = Asignacion.new(val[0],val[2])}
         ;
     CONDICIONAL
-        : 'if' {@handler.guardia_bool} EXPR_BOOL '->' {@handler.exito} INSTRUCCION F
-        | 'if' EXPR_RELACION '->' {@handler.exito} INSTRUCCION F
-        | 'if' {@handler.guardia_bool} EXPR_RELACION_BOOL '->' {@handler.exito} INSTRUCCION F
-        | 'if' {@handler.guardia_bool} EXPR_RELACION_MATRIX '->' {@handler.exito} INSTRUCCION F
+        : 'if' EXPRESION '->' INSTRUCCION_GENERAL CONDICIONAL_CONT
         ;
-    F
+    CONDICIONAL_CONT
         : 'end'
-        | 'otherwise' {@handler.contrario} '->' INSTRUCCION 'end' {@handler.end}
+        | 'otherwise' '->' INSTRUCCION_GENERAL 'end'
         ;
     REPETICION_DET
-        : 'for' {@handler.cicloDet} ID 'from' {@handler.desde} EXPR_ARIT 'to' {@handler.hasta} EXPR_ARIT H
-        | 'for' {@handler.cicloDet} ID 'from' {@handler.desde} EXPR_ARIT 'to' {@handler.hasta} EXPR_ARIT H
+        : 'for' VARIABLE 'from' EXPRESION 'to' EXPRESION REPETICION_DET_CONT
         ;
-    H   #SIN ESTA COSA RARA QUE HICE ACA SOLO ENTRABA EN EL PRIMER CASO DE REPETICION_DET, LO PUSE PARA PROBAR PERO ASI SE ARREGLA
-        :  '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
-        | 'step' {@handler.paso} EXPR_ARIT '->' {@handler.repetir} INSTRUCCION 'end' {@handler.end}
+    REPETICION_DET_CONT
+        :  '->' INSTRUCCION_GENERAL 'end'
+        | 'step' EXPRESION '->' INSTRUCCION_GENERAL 'end'
         ;
     REPETICION_INDET
-        : 'while' {@handler.cicloIndet} EXPR_BOOL {@handler.guardia_bool} '->' {@handler.repetir} INSTRUCCION
+        : 'while' EXPRESION '->' INSTRUCCION_GENERAL 'end'
         ;
     I_O
-        : 'read' {@handler.lectura} ID
-        | 'print' {@handler.impresion} EXPRESION
+        : 'read' VARIABLE
+        | 'print' EXPRESION
         ;
     EXPRESION
         : LITERAL 
         | VARIABLE
-        | EXPR_ARIT
-        | EXPR_BOOL
-        | EXPR_CARACTER
-        | EXPR_MATRIX
-        | EXPR_RELACION
-        | EXPR_RELACION_BOOL
-        | EXPR_RELACION_MATRIX
+        | '(' EXPRESION ')'
+        | EXPRESION '+' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"SUMA","BIN ARITMETICA")}
+        | EXPRESION '-' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"RESTA","BIN ARITMETICA")}
+        | EXPRESION '*' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"MULTIPLICACION","BIN ARITMETICA")}
+        | EXPRESION '/' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"DIVISION","BIN ARITMETICA")}
+        | EXPRESION '%' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"MODULO","BIN ARITMETICA")}
+        | '-' EXPRESION =UMINUS {result = ExpresionUnaria.new(val[1],"RESTA","UN ARITMETICA")}
+        | EXPRESION '/\\' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"CONJUNCION","BIN BOOLEANA")}
+        | EXPRESION '\\/' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"DISYUNCION","BIN BOOLEANA")}
+        | 'not' EXPRESION {result = ExpresionUnaria.new(val[1],"RESTA","UN BOOLEANA")}
+        | EXPRESION '++'  {result = ExpresionUnaria.new(val[0],"INCREMENTO","UN CARACTER")}
+        | EXPRESION '--' {result = ExpresionUnaria.new(val[0],"DECREMENTO","UN CARACTER")}
+        | '#' EXPRESION {result = ExpresionUnaria.new("ASCII",val[0],"UN CARACTER")}
+        | EXPRESION '::' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"CONCATENACION","BIN MATRIZ")}
+        | '$' EXPRESION {result = ExpresionUnaria.new(val[1],"ROTACION","UN MATRICIAL")}
+        | EXPRESION '?' {result = ExpresionUnaria.new(val[1],"TRASPOSICION","UN MATRICIAL")}
+        | EXPRESION INDEX {result = ExpresionUnaria.new(val[1],"INDEXACION","UN MATRICIAL")}
+        | EXPRESION '<' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"MENOR","BIN RELACIONAL")}
+        | EXPRESION '<=' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"MENOR IGUAL","BIN RELACIONAL")}
+        | EXPRESION '>' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"MAYOR","BIN RELACIONAL")}
+        | EXPRESION '>=' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"MAYOR IGUAL","BIN RELACIONAL")}
+        | EXPRESION '=' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"IGUAL","BIN RELACIONAL")}
+        | EXPRESION '/=' EXPRESION {result = ExpresionBinaria.new(val[0],val[2],"DESIGUAL","BIN RELACIONAL")}
         ;
     LITERAL
         : LIT_INT
         | LIT_BOOL
-        | LIT_CARACTER
+        | caracter {result = LiteralCaracter.new(val[0])}
         | LIT_MATRIX
         ;
     LIT_INT
-        : num {@handler.numero(val[0])}
-        | '-' NEG #Sigue sin agarrar negativos
-        ;
-    NEG
-        : num {@handler.numeroNeg(val[0])}
+        : num {result = LiteralEntero.new(val[0])}
         ;
     LIT_BOOL
-        : 'True' {@handler.booleano("True")}
-        | 'False' {@handler.booleano("False")}
-        ;
-    LIT_CARACTER
-        : caracter {@handler.caracter(val[0])}
+        : 'True' {result = LiteralBooleano.new(val[0])}
+        | 'False' {result = LiteralBooleano.new(val[0])}
         ;
     LIT_MATRIX #ACA no se me ocurre que hacer
-        : '{' LIT_MATRIX '}' 
-        | LIT_MATRIX ',' LIT_MATRIX
-        | num {@handler.numero(val[0])}
+        : '{' DIMENSION '}' {result = LiteralMatriz.new(val[0])}
         ;
     VARIABLE
-        : ID
-        ;
-    EXPR_ARIT #EN TODAS LAS OPERACIONES SALE OPERADOR: OPERACION OPERADOR: ASI DIFERENCIAS ENTRE EL IZQ Y EL DER
-        : '(' EXPR_ARIT ')'
-        | EXPR_ARIT '+' {@handler.suma} EXPR_ARIT
-        | EXPR_ARIT '-' {@handler.resta} EXPR_ARIT
-        | EXPR_ARIT '*' {@handler.mult} EXPR_ARIT
-        | EXPR_ARIT '/' {@handler.div} EXPR_ARIT
-        | EXPR_ARIT '%' {@handler.mod} EXPR_ARIT
-        | '-' EXPR_ARIT 
-        | {@handler.operadorV} ID
-        | {@handler.operadorI} LIT_INT
-        ;
-    EXPR_BOOL
-        : '(' EXPR_BOOL ')'
-        | EXPR_BOOL '/\\' {@handler.and} EXPR_BOOL
-        | EXPR_BOOL '\\/' {@handler.or} EXPR_BOOL
-        | {@handler.negacion} 'not' EXPR_BOOL
-        | {@handler.operadorV} ID
-        | {@handler.operadorB} LIT_BOOL
-        ;
-    EXPR_CARACTER
-        : LIT_CARACTER {@handler.incremento} '++'
-        | LIT_CARACTER {@handler.decremento} '--'
-        | '#' {@handler.ascii} LIT_CARACTER
-        | ID {@handler.incremento} '++'
-        | ID {@handler.decremento} '--'
-        | '#' {@handler.ascii} ID
-        | ID
-        ;
-    EXPR_MATRIX
-        : EXPR_MATRIX '::' {@handler.concat} EXPR_MATRIX
-        | {@handler.rotacion} '$' EXPR_MATRIX
-        | EXPR_MATRIX {@handler.trasp} '?'
-        | EXPR_MATRIX INDEX
-        | {@handler.operadorV} ID
-        | {@handler.operadorM} LIT_MATRIX
+        : ident {result = Variable.new(val[0])}
         ;
     INDEX  #NO SE SI HAY QUE COLOCAR ALGO
-        : INDEX INDEX
-        | '[' num ']'
-        | '[' ID ']'
-        ;
-    EXPR_RELACION
-        : EXPR_RELACION '<' {@handler.menor} EXPR_RELACION
-        | EXPR_RELACION '<=' {@handler.menorIgual} EXPR_RELACION
-        | EXPR_RELACION '>' {@handler.mayor} EXPR_RELACION
-        | EXPR_RELACION '>=' {@handler.mayorIgual} EXPR_RELACION
-        | EXPR_RELACION '=' {@handler.igual} EXPR_RELACION
-        | EXPR_RELACION '/=' {@handler.desigual} EXPR_RELACION
-        | EXPR_ARIT
-        | EXPR_CARACTER
-        ;
-    EXPR_RELACION_BOOL
-        : EXPR_RELACION {@handler.igual} '=' EXPR_RELACION
-        | EXPR_RELACION {@handler.desigual} '/=' EXPR_RELACION
-        ;
-    EXPR_RELACION_MATRIX
-        : EXPR_MATRIX {@handler.igual} '=' EXPR_MATRIX
-        | EXPR_RELACION_MATRIX {@handler.desigual} '/=' EXPR_RELACION_MATRIX
-        ;
-    ID_AS
-        :ident {@handler.ident_as(val[0])}
-        ;
-    ID
-        :ident {@handler.ident(val[0])}
+        : '[' DIMENSION ']'
         ;
 end
  
 ---- inner
   attr_reader :handler
   require './handler'
+  require './construirArbol.rb'
   
-  def initialize tokenizer, handler = Handler.new
+  def initialize (tokenizer)
     @tokenizer = tokenizer
-    @handler = handler
     super()
   end
 
@@ -190,5 +152,4 @@ end
 
   def parse
     do_parse
-    handler
   end

@@ -24,12 +24,11 @@ def lexer(archivo, colaTk, colaEr)
 				  "}" => "TkLlaveCierra", "->" => "TkHacer", "<-" => "TkAsignacion", "+" => "TkSuma", 
 				  "-" => "TkResta", "*" => "TkMult", "/" => "TkDiv", "%" => "TkMod", "/\\" => "TkConjuncion", 
 				  "\\/" => "TkDisyuncion", "not" => "TkNegacion", "<" => "TkMenor", "<=" => "TkMenorIgual", 
-				  ">" => "TkMayor", ">=" => "TkMayorIgual", "=>" => "TkIgual", "++" => "TkSiguienteCar", 
+				  ">" => "TkMayor", ">=" => "TkMayorIgual", "=" => "TkIgual", "++" => "TkSiguienteCar", 
 				  "--" => "TkAnteriorCar", "#" => "TkValorAscii", "::" => "TkConcatenacion", 
 				  "$" => "TkRotacion", "?" => "TkTrasposicion", "'\\n'" => "TkCaracter", "'\\t'" => "TkCaracter",
-			  "'\''" => "TkCaracter", "'\\\\'" => "TkCaracter" , "otherwise" => "TkOtherwise", "step" => 'TkStep',
-			  "/=" => "TkDesigual"}
-
+			  	  "'\''" => "TkCaracter", "'\\\\'" => "TkCaracter" , "otherwise" => "TkOtherwise", 
+			  	  "step" => "TkStep", "/=" => "TkDesigual", "var" => "TkVar", "print" => "TkPrint"}
 
 	programa = ""
 	File.open(archivo, "r") do |f|

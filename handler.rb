@@ -1,16 +1,30 @@
 class Handler
+
   def initialize
-    @stack = [[:root]]
+    @stack = Array.new()
+    @final = nil
+  end
+
+  def empilar(elemt)
+    @stack.push(elemt)
+  end
+
+  def get_stack()
+    return @stack
+  end
+
+  def retornar(h)
+    return h
   end
 
   def start_inicio
     puts("With: ")
-    @stack.push [:simbolo_inicial]
+    #@stack.push [:simbolo_inicial]
   end
 
   def start_begin
     puts("Begin: ")
-    @stack.push [:inicio_instruccion]
+    #@stack.push [:inicio_instruccion]
   end
 
   def start_lista_declaracion
@@ -205,7 +219,7 @@ class Handler
   end
 
   def end
-    #VER si se hace algo
+    puts("END")
   end
 
   def get_stack()

@@ -1,5 +1,10 @@
-begin 
-	for i from 5 to -56 ->
-		mama <- 'h'.
+with
+	var contador, bar : int
+begin
+	bar <- 3.
+	%{ Asignar al contador
+	el valor 35, si bar > 2 }%
+	if bar > 2 ->
+		contador <- 35.
 	end
 end
